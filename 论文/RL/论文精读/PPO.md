@@ -10,7 +10,7 @@ PPO其实更多的是对TRPO的约束进行一个改进，用软约束去做了�
 
 
 
-![image-20260419155541400](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419155541400.png)
+![image-20260419155541400](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419155541400.png)
 
 为什么不用下面那个？因为那个beta是惩罚项的惩罚系数，在不同的学习，或者学习的不同阶段里，很难去选取一个固定的合适的
 
@@ -18,11 +18,11 @@ PPO其实更多的是对TRPO的约束进行一个改进，用软约束去做了�
 
 那么思路就是说，我还是想用软约束，所以就用动态的beta
 
-![image-20260419155850162](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419155850162.png)
+![image-20260419155850162](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419155850162.png)
 
 怎么去动态调整，？就是我们看KL散度，如下
 
-![image-20260419160011528](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419160011528.png)
+![image-20260419160011528](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419160011528.png)
 
 当然减小多少，增大多少，target是多少，需要经验了，就是如果超了1.5倍，我们就把beta除2
 
@@ -38,7 +38,7 @@ PPO其实更多的是对TRPO的约束进行一个改进，用软约束去做了�
 
 而PPO是直接把策略的改动限制在了一个范围里面
 
-![image-20260419160721543](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419160721543.png)
+![image-20260419160721543](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419160721543.png)
 
 意思就是说，如果我的x落在了l和r范围内，就正常更新x，如果比l还要靠左，我就取l，如果比r还要靠右，我就取r
 
@@ -50,11 +50,11 @@ PPO其实更多的是对TRPO的约束进行一个改进，用软约束去做了�
 
 原论文里面那个是0.2，也就是左边界是0.8，右边界是1.2
 
-![image-20260419161140064](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419161140064.png)
+![image-20260419161140064](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419161140064.png)
 
 这些是深度学习包用的
 
-![image-20260419161246345](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419161246345.png)
+![image-20260419161246345](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419161246345.png)
 
 看不懂，妈的
 

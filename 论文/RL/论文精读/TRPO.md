@@ -165,7 +165,7 @@ Pinsker不等式
 
 
 
-![image-20260419153520868](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419153520868.png)
+![image-20260419153520868](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419153520868.png)
 
 ## 引入置信域
 
@@ -173,7 +173,7 @@ Pinsker不等式
 
 C通常是很大的，但是呢，
 
-![image-20260419153724842](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419153724842.png)
+![image-20260419153724842](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419153724842.png)
 
 这样就是一个带约束条件的置信域的问题
 
@@ -201,7 +201,7 @@ C通常是很大的，但是呢，
 
 约束条件做了二阶泰勒
 
-![image-20260419154301487](C:\Users\13090\AppData\Roaming\Typora\typora-user-images\image-20260419154301487.png)
+![image-20260419154301487](https://cdn.jsdelivr.net/gh/ShiangHou/markdown_image/img/image-20260419154301487.png)
 
 后面就看不懂了，就是怎么去求这个hessian矩阵，然后怎么去解这个问题
 
