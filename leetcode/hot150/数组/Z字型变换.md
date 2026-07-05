@@ -43,3 +43,48 @@ l填res[0]的数组，e填res[1]的数组，e填res[2]的数组，此时弄一�
 然后反过来c填res[0],o填res[1],e填res[2]，这样就可以
 
 最后拼起来这三个就可以
+
+在这个过程中，我们需要维护一个flag，因为numRows不是固定的
+
+比如4个
+
+输入：s = "PAYPALISHIRING", numRows = 4
+输出："PINALSIGYAHRPI"
+解释：
+P     I    N
+A   L S  I G
+Y A   H R
+P     I
+
+所以流程其实是，首先，我们需要维护两个变量，一个是i，一个是flag，
+i会从0到numRows然后再从numRows到0
+
+i通过每次加flag来去控制
+
+每次填的时候，i都会+flag
+
+flag就是1或者-1，等i到num的数量时flag转换成-1
+
+切换到-1的时候，此时就是往后填写就行
+
+```python 
+class Solution:
+    def convert(self, s: str, numRows: int) -> str:
+        if numRows: < 2:
+            return s
+        #先建立numRow的数组,这里考虑用一个二维的,一共num个空字符串
+        res = ["" for _ in range(numRows)]
+        i,flag = 0,-1
+        for c in s:
+            #先加一个，不管头和尾巴，
+            res[i] += c
+            if i == 0 or i == numRows-1:
+                flag = -flag#所以最初flag要从-1开始，相当于之前的流程已经转到头了
+            i+=flag
+        return "".join(res)
+
+
+
+
+
+```
