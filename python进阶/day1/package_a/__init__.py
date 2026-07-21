@@ -1,1 +1,0 @@
-print(__name__, __package__, __file__)
