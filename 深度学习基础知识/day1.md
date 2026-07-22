@@ -372,6 +372,10 @@ $$
 $$
 这里 $b_1$ 会广播到 batch 中每一个样本。
 
+> 广播机制就是说
+
+
+
 ------
 
 #####  ReLU
@@ -463,6 +467,8 @@ $$
 \operatorname{softmax}(z-c)
 $$
 
+> 这里的意思是，比如分类是3类，hidden_dim是1024，那么我们会在logits之前弄一个1024*3的线性层，搞成3维，最后的logits就是3维度的，然后再softmax
+
 #### Cross Entropy
 
 假设正确类别为 $y$，模型对正确类别给出的概率为 $p_y$。
@@ -553,6 +559,10 @@ $$
 +
 \frac{e^{z_j}}{\sum_ke^{z_k}}
 $$
+> 这里是吧上面的log拆开，变成-loge z +logsume，求导后就是-1（因为logez就是z，）后面就是log的导
+
+
+
 因此：
 $$
 \boxed{
@@ -688,3 +698,521 @@ $$
 dX=dZ_1W_1^\top
 $$
 一般训练数据 $X$ 不需要更新，因此通常不会关心 $dX$。但在更复杂的网络中，$X$ 可能是上一层的输出，所以必须继续计算。
+
+# 十一、手写最小两层神经网络
+
+下面的代码完整实现：
+
+- 前向传播
+- Softmax
+- Cross Entropy
+- 反向传播
+- 参数更新
+- PyTorch 梯度验证
+
+```python
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+
+# ============================================================
+# 1. 构造数据
+# ============================================================
+
+rng = np.random.default_rng(42)#随机数生成器，应该是np的类，42是随机种子
+
+batch_size = 4
+input_dim = 3
+hidden_dim = 5
+num_classes = 3
+
+# 输入：4 个样本，每个样本 3 个特征
+X = rng.normal(size=(batch_size, input_dim))#应该也是np的那个类的方法，入参数是一个tup，会返回，然后这里的normal就是从正态分布中采样
+
+# 每个样本的分类标签
+y = np.array([0, 2, 1, 2], dtype=np.int64)# 一个array，数据类型
+
+
+# ============================================================
+# 2. 初始化参数
+# ============================================================
+
+W1 = rng.normal(scale=0.1, size=(input_dim, hidden_dim))#也是随机生成，这个scale是
+b1 = np.zeros(hidden_dim)
+
+W2 = rng.normal(scale=0.1, size=(hidden_dim, num_classes))#scale表示正态分布的标准差是0.1，
+b2 = np.zeros(num_classes)#全0的，这个的是(5,)的维度
+
+
+# ============================================================
+# 3. 前向传播
+# ============================================================
+
+# 第一层线性变换
+z1 = X @ W1 + b1#
+#X的维度是(4,3)，W1的是（3,5),乘完后是(4,5)然后b1的是(5,)，直接加的话，根据广播机制会加到每一行
+
+# ReLU
+a1 = np.maximum(z1, 0.0)#普通的取max的，就是把整个(4,5)矩阵中所有小于0的全部搞成0
+
+# 第二层线性变换，得到 logits
+logits = a1 @ W2 + b2#W2是(5,3)的维度
+
+# 数值稳定的 Softmax
+shifted_logits = logits - np.max(logits, axis=1, keepdims=True)#这里是找到每一行的最大值，因为axis是1，所以是按列比较，也就是每一行找一个最大，这样其实是(3,),keepdim后就是(3,1)
+exp_logits = np.exp(shifted_logits)
+probs = exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
+
+# Cross Entropy
+correct_probs = probs[np.arange(batch_size), y]
+loss = -np.mean(np.log(correct_probs))
+
+print("Manual loss:", loss)
+
+
+# ============================================================
+# 4. 反向传播
+# ============================================================
+
+# Softmax + Cross Entropy 的梯度：
+# dlogits = (probs - one_hot(y)) / batch_size
+
+dlogits = probs.copy()
+dlogits[np.arange(batch_size), y] -= 1.0
+dlogits /= batch_size
+
+# 第二层梯度
+dW2 = a1.T @ dlogits
+db2 = np.sum(dlogits, axis=0)
+
+# 梯度传回隐藏层
+da1 = dlogits @ W2.T
+
+# ReLU 反向传播
+dz1 = da1 * (z1 > 0)
+
+# 第一层梯度
+dW1 = X.T @ dz1
+db1 = np.sum(dz1, axis=0)
+
+
+# ============================================================
+# 5. 使用 PyTorch 验证梯度
+# ============================================================
+
+# 使用 float64，减少数值误差
+X_t = torch.tensor(X, dtype=torch.float64)
+y_t = torch.tensor(y, dtype=torch.long)
+
+W1_t = torch.tensor(W1, dtype=torch.float64, requires_grad=True)
+b1_t = torch.tensor(b1, dtype=torch.float64, requires_grad=True)
+
+W2_t = torch.tensor(W2, dtype=torch.float64, requires_grad=True)
+b2_t = torch.tensor(b2, dtype=torch.float64, requires_grad=True)
+
+z1_t = X_t @ W1_t + b1_t
+a1_t = torch.relu(z1_t)
+logits_t = a1_t @ W2_t + b2_t
+
+loss_t = F.cross_entropy(logits_t, y_t)
+
+# 自动反向传播
+loss_t.backward()
+
+print("PyTorch loss:", loss_t.item())
+
+print(
+    "W1 gradient max error:",
+    np.max(np.abs(dW1 - W1_t.grad.detach().numpy()))
+)
+
+print(
+    "b1 gradient max error:",
+    np.max(np.abs(db1 - b1_t.grad.detach().numpy()))
+)
+
+print(
+    "W2 gradient max error:",
+    np.max(np.abs(dW2 - W2_t.grad.detach().numpy()))
+)
+
+print(
+    "b2 gradient max error:",
+    np.max(np.abs(db2 - b2_t.grad.detach().numpy()))
+)
+
+
+# ============================================================
+# 6. 参数更新
+# ============================================================
+
+learning_rate = 0.1
+
+W1 -= learning_rate * dW1
+b1 -= learning_rate * db1
+
+W2 -= learning_rate * dW2
+b2 -= learning_rate * db2
+
+
+# ============================================================
+# 7. 更新后重新计算 loss
+# ============================================================
+
+z1_new = X @ W1 + b1
+a1_new = np.maximum(z1_new, 0.0)
+logits_new = a1_new @ W2 + b2
+
+shifted_new = logits_new - np.max(
+    logits_new,
+    axis=1,
+    keepdims=True
+)
+
+exp_new = np.exp(shifted_new)
+probs_new = exp_new / np.sum(exp_new, axis=1, keepdims=True)
+
+loss_new = -np.mean(
+    np.log(probs_new[np.arange(batch_size), y])
+)
+
+print("Loss after one update:", loss_new)
+```
+
+正常情况下，四个梯度误差应该非常小，通常在：
+
+```
+1e-15 ～ 1e-8
+```
+
+这说明：
+
+> 你手写的反向传播，与 PyTorch autograd 计算出的梯度一致。
+
+------
+
+# 十二、逐行理解这段反向传播
+
+最核心的一行：
+
+```
+dlogits = probs.copy()
+dlogits[np.arange(batch_size), y] -= 1.0
+dlogits /= batch_size
+```
+
+它对应：
+$$
+\frac{\partial L}{\partial z}
+=
+\frac{p-\operatorname{onehot}(y)}{B}
+$$
+为什么除以 batch size？
+
+因为 loss 是 batch 内样本 loss 的平均：
+$$
+L=\frac{1}{B}\sum_{i=1}^{B}L_i
+$$
+所以每个样本产生的梯度也要除以 $B$。
+
+------
+
+这一行：
+
+```
+dW2 = a1.T @ dlogits
+```
+
+对应：
+$$
+dW_2=A_1^\top dZ_2
+$$
+可以理解为：
+
+> 输入到第二层的每一个隐藏特征，与输出误差信号相乘，再对 batch 求和。
+
+------
+
+这一行：
+
+```
+da1 = dlogits @ W2.T
+```
+
+对应：
+$$
+dA_1=dZ_2W_2^\top
+$$
+它将分类输出处的误差信号，沿第二层权重传回隐藏层。
+
+------
+
+这一行：
+
+```
+dz1 = da1 * (z1 > 0)
+```
+
+对应 ReLU 的局部导数。
+
+对于前向时被 ReLU 截断成 0 的位置，梯度也被截断。
+
+------
+
+参数更新：
+
+```
+W1 -= learning_rate * dW1
+```
+
+对应：
+$$
+W_1\leftarrow W_1-\eta dW_1
+$$
+这才是真正改变模型参数的步骤。
+
+------
+
+# 十三、PyTorch 的自动微分做了什么
+
+考虑下面代码：
+
+```
+x = torch.tensor(2.0, requires_grad=True)
+w = torch.tensor(3.0, requires_grad=True)
+
+a = x * w
+b = a + 1
+loss = b ** 2
+
+loss.backward()
+
+print(w.grad)
+```
+
+前向时，PyTorch 不只是计算结果，还构建了一个动态计算图：
+
+```
+x ----\
+       multiply -> a -> add -> b -> square -> loss
+w ----/              ^
+                     |
+                     1
+```
+
+每个计算节点会保存：
+
+- 当前运算是什么。
+- 哪些 tensor 是输入。
+- 反向传播时需要哪些中间结果。
+- 如何计算局部梯度。
+
+执行：
+
+```
+loss.backward()
+```
+
+PyTorch 会：
+
+1. 将 loss 对自身的梯度初始化为 1：
+   $$
+   \frac{\partial L}{\partial L}=1
+   $$
+
+2. 按照计算图的逆拓扑顺序遍历节点。
+
+3. 对每个节点调用对应的 backward 规则。
+
+4. 使用链式法则将梯度传给父节点。
+
+5. 将叶子参数的梯度累积到 `.grad` 中。
+
+所以：
+
+```
+w.grad
+```
+
+保存：
+$$
+\frac{\partial L}{\partial w}
+$$
+
+------
+
+# 十四、`loss.backward()` 到底做了什么
+
+面试中可以这样回答：
+
+> `loss.backward()` 会从 loss 节点出发，沿前向过程中构建的动态计算图反向遍历。对每个算子，它利用该算子的局部导数和上游梯度，通过链式法则计算输入梯度。对于 `requires_grad=True` 的叶子张量，例如模型参数，最终梯度会累积到参数的 `.grad` 属性中。它只负责计算和累积梯度，并不会更新参数，参数更新由 `optimizer.step()` 完成。
+
+可以继续补充四个细节。
+
+## 14.1 loss 通常必须是标量
+
+如果 loss 是标量，PyTorch 默认：
+$$
+\frac{\partial L}{\partial L}=1
+$$
+如果输出不是标量，需要显式提供上游梯度：
+
+```
+y.backward(gradient=torch.ones_like(y))
+```
+
+------
+
+## 14.2 梯度存入 `.grad`
+
+```
+for name, param in model.named_parameters():
+    print(name, param.grad)
+```
+
+在 `backward()` 之前通常是：
+
+```
+None
+```
+
+执行之后才会得到具体梯度。
+
+------
+
+## 14.3 梯度默认累积
+
+如果连续执行：
+
+```
+loss.backward()
+loss.backward()
+```
+
+那么第二次并不会覆盖第一次，而是：
+$$
+\text{grad}_{new}
+=
+\text{grad}_{old}
++
+\text{grad}_{current}
+$$
+
+------
+
+## 14.4 计算图通常在 backward 后释放
+
+默认情况下：
+
+```
+loss.backward()
+```
+
+之后中间计算图会被释放以节省显存。
+
+如果确实需要对同一张图多次 backward，可以：
+
+```
+loss.backward(retain_graph=True)
+```
+
+但滥用会显著增加显存占用。
+
+------
+
+# 十五、为什么需要 `optimizer.zero_grad()`
+
+标准训练循环：
+
+```
+for batch in dataloader:
+    optimizer.zero_grad()
+
+    outputs = model(batch["input_ids"])
+    loss = compute_loss(outputs, batch["labels"])
+
+    loss.backward()
+    optimizer.step()
+```
+
+`zero_grad()` 的作用是清空上一次迭代保存在参数 `.grad` 中的梯度。
+
+因为 PyTorch 默认执行：
+$$
+\text{param.grad}
+\mathrel{+}=
+\text{current gradient}
+$$
+而不是：
+$$
+\text{param.grad}
+=
+\text{current gradient}
+$$
+如果不清空，假设：
+
+第一步梯度：
+$$
+g_1
+$$
+第二步梯度：
+$$
+g_2
+$$
+第二步实际使用的会变成：
+$$
+g_1+g_2
+$$
+而不是单独的 $g_2$。
+
+这可能导致：
+
+- 梯度越来越大。
+- 更新方向混入历史 batch。
+- loss 波动甚至训练发散。
+- 实际 batch size 与预期不一致。
+
+------
+
+## 15.1 为什么 PyTorch 要设计成累积，而不是自动覆盖
+
+因为梯度累积本身是一项重要功能。
+
+例如显存只能放一个 micro-batch，但希望有效 batch size 为 8：
+
+```
+optimizer.zero_grad()
+
+for micro_step in range(8):
+    loss = model(batch[micro_step]) / 8
+    loss.backward()
+
+optimizer.step()
+```
+
+这时：
+$$
+g=
+\frac{1}{8}
+\sum_{i=1}^{8}g_i
+$$
+等价于对更大的 batch 求平均梯度。
+
+因此 PyTorch 的设计是：
+
+> 默认累积，由使用者决定何时清空。
+
+------
+
+## 15.2 `zero_grad(set_to_none=True)`
+
+常见写法：
+
+```
+optimizer.zero_grad(set_to_none=True)
+```
+
+它不是把梯度 tensor 全部填成 0，而是把 `.grad` 设置为 `None`。
+
+通常可以减少内存写入，性能略好，也是现代 PyTorch 常用设置。
