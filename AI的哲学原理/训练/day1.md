@@ -1999,7 +1999,7 @@ gradient_accumulation_steps: 8
 
 伪代码：
 
-```
+```python
 optimizer.zero_grad()
 
 for i in range(8):
@@ -2387,7 +2387,7 @@ optimizer.step()
 
 # 三十、一个标准 PyTorch 训练循环
 
-```
+```python
 model.train()
 
 for batch in train_dataloader:
@@ -2511,7 +2511,7 @@ AdamW 则会结合：
 
 ------
 
-# 三十一、面试问题一：`loss.backward()` 到底做了什么
+# 三十一、loss.backward()` 到底做了什么
 
 ## 推荐回答
 
@@ -2527,7 +2527,7 @@ AdamW 则会结合：
 
 ------
 
-# 三十二、面试问题二：为什么需要 `optimizer.zero_grad()`
+# 三十二、为什么需要 `optimizer.zero_grad()`
 
 ## 推荐回答
 
@@ -2541,7 +2541,7 @@ AdamW 则会结合：
 
 ------
 
-# 三十三、面试问题三：Cross Entropy 为什么适合语言模型
+# 三十三、Cross Entropy 为什么适合语言模型
 
 ## 推荐回答
 
@@ -2553,7 +2553,7 @@ AdamW 则会结合：
 
 ------
 
-# 三十四、面试问题四：一个 token 的 loss 怎样传回 Transformer 参数
+# 三十四、一个 token 的 loss 怎样传回 Transformer 参数
 
 ## 推荐回答
 
