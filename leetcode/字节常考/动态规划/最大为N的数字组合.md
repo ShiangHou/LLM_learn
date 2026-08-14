@@ -36,11 +36,7 @@ very的复杂啊
 
 首先依旧是写边界，如果i == s的长度，如果is_num，说明之前填过数字，直接返回1就行，相当于是一个钟
 
-
-然后开始
-res = 0
-if not is_num:
-    res = f(i + 1, False, False)
+然后开始 res = 0 if not is_num: res = f(i + 1, False, False)
 
 意思就是，如果is_num是false，说明之前没填，那么我下面的也可以不填
 
@@ -48,15 +44,12 @@ up = s[i] if is_limit else '9'
 
 这个是确认当前最大可以填多少，如果is_limit，说明之前填过位，那么当前的最大就只能是N当前位的最大，如果之前有没填的，说明位数小，那么可以放肆的填，上限就是9
 
-for d in digits:
-    if d > up: break
-开始填，遍历我们的sigits，如果大于上限，直接跳出，为什么是跳出？因为digits是排好序的，如果d不行，那么d后面的肯定也不行
+for d in digits: if d > up: break 开始填，遍历我们的sigits，如果大于上限，直接跳出，为什么是跳出？因为digits是排好序的，如果d不行，那么d后面的肯定也不行
 
 res += f(i + 1, is_limit and d == up, True)
 
 这个就是，走完了这一位，然后递归，走下一位，看三个入参数
 
-i就是i+1
-is_limit and d == up 这个是说，只有当    之前的是达到了limit，并且当前填的d也是达到了上限，这样就说明上限传递下去了，传到了下一位
+i就是i+1 is_limit and d == up 这个是说，只有当 之前的是达到了limit，并且当前填的d也是达到了上限，这样就说明上限传递下去了，传到了下一位
 
-True  这个好理解，就是我们填数字了
+True 这个好理解，就是我们填数字了
